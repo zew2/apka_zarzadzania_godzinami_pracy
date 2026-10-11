@@ -34,7 +34,7 @@ Moduł dedykowany kadrze zarządzającej, który znacznie automatyzuje i porząd
 Wdrożenie systemu TimeTracker zapewnia transparentność i oszczędność czasu dla całego zespołu. Nikt nie traci czasu na poszukiwanie przełożonego w celu podpisania papierowego wniosku, a dział kadr czy kierownik nie musi ręcznie zliczać przepracowanych godzin. Wszystkie procesy są uporządkowane, a informacje zawsze łatwo dostępne w jednym miejscu.
 
 ## Autorzy
-* Marcin Górecki
-* Maciej Krok
+* Marcin Górecki (zew2)
+* Maciej Krok (mcjkrok)
 * Jakub Kulawiak
 * Bartosz Kobiernik
