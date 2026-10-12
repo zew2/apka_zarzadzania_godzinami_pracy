@@ -36,5 +36,5 @@ Wdrożenie systemu TimeTracker zapewnia transparentność i oszczędność czasu
 ## Autorzy
 * Marcin Górecki (zew2)
 * Maciej Krok (mcjkrok)
-* Jakub Kulawiak
-* Bartosz Kobiernik
+* Jakub Kulawiak (Jakub-Kulawiak1)
+* Bartosz Kobiernik (Bartosz56026)
