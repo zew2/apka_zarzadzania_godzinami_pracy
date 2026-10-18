@@ -27,11 +27,11 @@ Każdy pracuje tylko w swoim folderze. Szczegóły modułu są w `README.md` w j
 
 | Część | Stan |
 |---|---|
-| Logowanie (`auth`) | Okno logowania gotowe, bez prawdziwego sprawdzania hasła |
-| Łączenie w `App.jsx` | Do zrobienia |
-| Rejestracja czasu (`time-tracking`) | Do zrobienia |
-| Panel pracownika (`employee-panel`) | Gotowy, działa na danych testowych |
-| Panel kierownika (`manager-panel`) | Gotowy, działa na danych testowych |
+| Logowanie (`auth`) | Gotowe, pełna integracja z Firebase (AuthContext, prawdziwa weryfikacja i zarządzanie sesją) |
+| Łączenie w `App.jsx` | Gotowe (tymczasowy router pozwalający na testowanie paneli pracownika i kierownika po zalogowaniu) |
+| Rejestracja czasu (`time-tracking`) | Do zrobienia (oczekuje na integrację WelcomePage) |
+| Panel pracownika (`employee-panel`) | Gotowy, połączony z logowaniem (działa na dopasowanych danych testowych) |
+| Panel kierownika (`manager-panel`) | Gotowy, połączony z logowaniem (działa na dopasowanych danych testowych) |
 
 ## Wspólne dane
 
@@ -61,16 +61,18 @@ Dni urlopu liczymy jako dni robocze (pon–pt).
 
 ## Struktura projektu
 
-```
+```text
 apka_zarzadzanie_czasem_pracy/src/
-├── App.jsx                  # łączy wszystko (Marcin)
+├── App.jsx                  # łączy wszystko, zarządza widokami (Marcin)
+├── firebase.js              # konfiguracja i połączenie z bazą Firebase (Marcin)
+├── context/                 
+│   └── AuthContext.jsx      # globalny stan sesji użytkownika (Marcin)
 ├── components/ui/Button.jsx # wspólny przycisk
 └── features/
-    ├── auth/                # logowanie (Marcin)
+    ├── auth/                # logowanie Firebase - komponenty wizualne (Marcin)
     ├── time-tracking/       # ekran główny z PIN-em (Bartosz)
     ├── employee-panel/      # panel pracownika (Maciej)
     └── manager-panel/       # panel kierownika (Jakub)
-```
 
 ## Uruchomienie
 
@@ -83,12 +85,11 @@ npm run dev
 Aplikacja otworzy się pod adresem z terminala (zwykle http://localhost:5173).
 Przed wrzuceniem zmian warto odpalić `npm run lint` i `npm run build`.
 
-## Zasady pracy w repo
-
-- Zmieniasz tylko pliki w swoim folderze. `App.jsx` i `components/ui` zmienia Marcin.
-- Przed pushem: `git pull --rebase`, żeby nie nadpisać cudzych zmian.
+## Zasady pracy w repo
+
+- Zmieniasz tylko pliki w swoim folderze (wewnątrz `features/`). Plikiem `App.jsx`, folderami `components/ui` i `context/` oraz plikiem `firebase.js` zarządza Marcin. Nie ma potrzeby zmieniania już App.jsx ponieważ obecny plik obsługuje już przełączanmie pomiędzy modułami.
+- Przed pushem: `git pull --rebase`, żeby nie nadpisać cudzych zmian i uniknąć konfliktów.
 - Commity po polsku, krótko, co zostało zrobione.
-
 ## Autorzy
 
 - Marcin Górecki (zew2)
