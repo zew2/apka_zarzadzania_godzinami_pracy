@@ -1,58 +1,55 @@
-import { useEffect, useState } from 'react';
-import { getLeaveStats } from './employeeUtils';
-import LeaveSummary from './LeaveSummary';
 import LeaveRequestForm from './LeaveRequestForm';
-import LeaveHistory from './LeaveHistory';
 import WorkWeek from './WorkWeek';
+import { STATUS, formatDate, getUsedDays } from './employeeUtils';
 
-// Panel pracownika. Nie trzyma żadnych danych sam — wszystko dostaje z zewnątrz (z App.jsx),
-// dzięki temu działa tak samo na danych testowych i na prawdziwej bazie.
-//
-// Propsy (kontrakt z zespołem):
-//   user            { id, name, urlopDni }
-//   timeEntries     [{ userId, type: 'START'|'PRZERWA'|'STOP', timestamp }]
-//   leaveRequests   [{ id, userId, startDate, endDate, status, reason?, managerNote? }]
-//   onSubmitLeave   ({ startDate, endDate, reason }) => void
-//   onLogout        () => void
 export default function EmployeePanel({ user, timeEntries, leaveRequests, onSubmitLeave, onLogout }) {
-  // odświeżanie co minutę, żeby dzisiejszy czas pracy rósł na żywo
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-
+  // tylko dane zalogowanego pracownika
   const myEntries = timeEntries.filter((e) => e.userId === user.id);
   const myRequests = leaveRequests.filter((r) => r.userId === user.id);
-  const stats = getLeaveStats(user, myRequests);
+
+  const used = getUsedDays(myRequests);
+  const remaining = user.urlopDni - used;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-indigo-600 text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex justify-between items-center gap-4">
-          <div>
-            <p className="text-indigo-200 text-sm">Panel pracownika</p>
-            <h1 className="text-xl sm:text-2xl font-bold">{user.name}</h1>
-          </div>
-          <button
-            onClick={onLogout}
-            className="border border-white/30 hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            Wyloguj
-          </button>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-100 p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto flex flex-col gap-4">
+        <header className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Cześć, {user.name}</h1>
+          <button onClick={onLogout} className="text-slate-600 hover:underline">Wyloguj</button>
+        </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 grid gap-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <LeaveSummary stats={stats} />
-          <LeaveRequestForm user={user} requests={myRequests} onSubmit={onSubmitLeave} />
-          <LeaveHistory requests={myRequests} />
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
+            <div className="bg-white p-6 rounded-2xl shadow-sm">
+              <h2 className="text-lg font-bold mb-2">Urlop</h2>
+              <p>Wykorzystane: <b>{used}</b> z {user.urlopDni} dni</p>
+              <p>Zostało: <b className="text-indigo-600">{remaining}</b> dni</p>
+            </div>
+
+            <LeaveRequestForm remaining={remaining} onSubmit={onSubmitLeave} />
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm">
+              <h2 className="text-lg font-bold mb-4">Moje wnioski</h2>
+              {myRequests.length === 0 && <p className="text-slate-400">Brak wniosków</p>}
+              <ul className="flex flex-col gap-3">
+                {myRequests.map((r) => (
+                  <li key={r.id} className="text-sm">
+                    <div className="flex justify-between gap-2">
+                      <span>{formatDate(r.startDate)} – {formatDate(r.endDate)}</span>
+                      <span className={`px-2 rounded-full ${STATUS[r.status].color}`}>
+                        {STATUS[r.status].label}
+                      </span>
+                    </div>
+                    {r.managerNote && <p className="text-slate-500">Kierownik: {r.managerNote}</p>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <WorkWeek entries={myEntries} />
         </div>
-        <div>
-          <WorkWeek entries={myEntries} now={now} />
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
