@@ -1,40 +1,97 @@
-# TimeTracker - System Zarządzania Czasem Pracy i Urlopami
+# TimeTracker – czas pracy i urlopy
 
-TimeTracker to intuicyjna aplikacja zaprojektowana, aby usprawnić codzienną organizację pracy w firmie. Jej głównym celem jest zastąpienie tradycyjnych, papierowych list obecności oraz papierowego obiegu wniosków urlopowych nowoczesnym, przyjaznym rozwiązaniem cyfrowym.
+Aplikacja zastępuje papierową listę obecności i papierowe wnioski urlopowe.
+Pracownik odbija się kodem PIN, składa wnioski urlopowe online, a kierownik widzi, kto jest w pracy, i akceptuje urlopy.
 
-Aplikacja składa się z trzech głównych modułów, dostosowanych do potrzeb różnych użytkowników:
+**Technologie:** React 19, Vite, Tailwind CSS 4
 
-## Jak działa system?
+## Jak działa aplikacja
 
-### 1. Rejestracja czasu pracy (Ekran Główny)
+1. **Ekran główny (odbijanie się)** – działa np. na tablecie przy wejściu. Pracownik wpisuje swój 4-cyfrowy PIN i wybiera **Rozpoczęcie pracy**, **Przerwa** albo **Koniec pracy**. Aplikacja zapisuje godzinę.
+2. **Logowanie** – przycisk na ekranie głównym. Po zalogowaniu aplikacja pokazuje panel pracownika albo kierownika, w zależności od roli.
+3. **Panel pracownika** – wykorzystany i pozostały urlop, nowy wniosek urlopowy, statusy wniosków, ostatnie 7 dni pracy.
+4. **Panel kierownika** – kto jest dziś w pracy, na przerwie albo nieobecny; akceptacja wniosków (**Akceptuj / Do wyjaśnienia / Odrzuć**); dodawanie i edycja pracowników.
 
-Moduł ten pełni funkcję wirtualnego czytnika, który może być uruchomiony na ogólnodostępnym urządzeniu (np. tablecie przy wejściu do biura). 
+## Podział pracy
 
-Pracownik nie musi logować się na pełne konto – wystarczy, że wpisze swój indywidualny, 4-cyfrowy kod PIN i wybierze jedną z dostępnych akcji: **Rozpoczęcie pracy**, **Przerwa** lub **Zakończenie pracy**. System automatycznie i precyzyjnie odnotuje czas tego zdarzenia.
+| Osoba | Część | Folder | Co robi |
+|---|---|---|---|
+| **Marcin Górecki** (zew2) | Logowanie + łączenie całości | `features/auth`, `App.jsx`, `components/ui` | Okno logowania, przełączanie widoków po roli, trzymanie wspólnych danych, przycisk `Button` dla wszystkich |
+| **Bartosz Kobiernik** (Bartosz56026) | Rejestracja czasu pracy | `features/time-tracking` | Ekran główny: pole na PIN + przyciski Start / Przerwa / Koniec pracy, zapis odbić |
+| **Maciej Krok** (mcjkrok) | Panel pracownika | `features/employee-panel` | Licznik urlopu, formularz wniosku, lista wniosków ze statusem, ostatnie 7 dni pracy |
+| **Jakub Kulawiak** (Jakub-Kulawiak1) | Panel kierownika | `features/manager-panel` | Obecność dziś, akceptowanie wniosków, zarządzanie pracownikami |
 
-### 2. Indywidualny Profil Pracownika
+Każdy pracuje tylko w swoim folderze. Szczegóły modułu są w `README.md` w jego folderze.
 
-Po zalogowaniu się do systemu przy użyciu loginu i hasła (np. na własnym komputerze lub smartfonie), pracownik zyskuje dostęp do swojego osobistego panelu. W tym miejscu może samodzielnie:
+### Stan prac
 
-* Sprawdzić aktualne saldo urlopowe (wykorzystane i pozostałe dni).
-* Zweryfikować ewentualne nadgodziny i przepracowany czas.
-* Wygodnie złożyć wniosek o urlop, wybierając jedynie zakres dat i (opcjonalnie) podając powód.
-* Śledzić na bieżąco status swoich wniosków (czy oczekują na decyzję, czy zostały już zaakceptowane przez przełożonego).
+| Część | Stan |
+|---|---|
+| Logowanie (`auth`) | Okno logowania gotowe, bez prawdziwego sprawdzania hasła |
+| Łączenie w `App.jsx` | Do zrobienia |
+| Rejestracja czasu (`time-tracking`) | Do zrobienia |
+| Panel pracownika (`employee-panel`) | Gotowy, działa na danych testowych |
+| Panel kierownika (`manager-panel`) | Gotowy, działa na danych testowych |
 
-### 3. Panel Zarządzania (Dla Kierownika)
+## Wspólne dane
 
-Moduł dedykowany kadrze zarządzającej, który znacznie automatyzuje i porządkuje obowiązki administracyjne. Przełożony po zalogowaniu otrzymuje dostęp do centrum dowodzenia, gdzie może:
+Wszystkie moduły korzystają z tych samych obiektów. Trzyma je `App.jsx` i przekazuje do paneli przez propsy.
 
-* Sprawdzić na wspólnym grafiku, kto aktualnie pracuje, a kto jest na przerwie lub zakończył już zmianę.
-* Sprawnie zarządzać urlopami zespołu. Wnioski można jednym kliknięciem **zaakceptować**, **odrzucić** lub oznaczyć jako **"do wyjaśnienia"** (co jest sygnałem dla pracownika, że potrzebne są ustalenia, np. z powodu nakładających się terminów z inną osobą z działu).
-* Administrować personelem, czyli dodawać nowych pracowników, nadawać im kody PIN oraz przypisywać przysługujący im wymiar urlopu.
+**Użytkownik**
+```js
+{ id, name, email, login, pin, password, role, urlopDni }
+// role: 'pracownik' | 'kierownik', urlopDni: 21 | 26, pin: 4 cyfry
+```
 
-## Korzyści z wdrożenia
+**Odbicie (rejestracja czasu)**
+```js
+{ userId, type, timestamp }
+// type: 'START' (wejście lub powrót z przerwy) | 'PRZERWA' | 'STOP'
+// timestamp: tekst ISO, np. new Date().toISOString()
+```
 
-Wdrożenie systemu TimeTracker zapewnia transparentność i oszczędność czasu dla całego zespołu. Nikt nie traci czasu na poszukiwanie przełożonego w celu podpisania papierowego wniosku, a dział kadr czy kierownik nie musi ręcznie zliczać przepracowanych godzin. Wszystkie procesy są uporządkowane, a informacje zawsze łatwo dostępne w jednym miejscu.
+**Wniosek urlopowy**
+```js
+{ id, userId, startDate, endDate, status, reason, managerNote }
+// daty: 'RRRR-MM-DD'
+// status: 'oczekuje' | 'zaakceptowany' | 'odrzucony' | 'do_wyjasnienia'
+```
+
+Dni urlopu liczymy jako dni robocze (pon–pt).
+
+## Struktura projektu
+
+```
+apka_zarzadzanie_czasem_pracy/src/
+├── App.jsx                  # łączy wszystko (Marcin)
+├── components/ui/Button.jsx # wspólny przycisk
+└── features/
+    ├── auth/                # logowanie (Marcin)
+    ├── time-tracking/       # ekran główny z PIN-em (Bartosz)
+    ├── employee-panel/      # panel pracownika (Maciej)
+    └── manager-panel/       # panel kierownika (Jakub)
+```
+
+## Uruchomienie
+
+```bash
+cd apka_zarzadzanie_czasem_pracy
+npm install
+npm run dev
+```
+
+Aplikacja otworzy się pod adresem z terminala (zwykle http://localhost:5173).
+Przed wrzuceniem zmian warto odpalić `npm run lint` i `npm run build`.
+
+## Zasady pracy w repo
+
+- Zmieniasz tylko pliki w swoim folderze. `App.jsx` i `components/ui` zmienia Marcin.
+- Przed pushem: `git pull --rebase`, żeby nie nadpisać cudzych zmian.
+- Commity po polsku, krótko, co zostało zrobione.
 
 ## Autorzy
-* Marcin Górecki (zew2)
-* Maciej Krok (mcjkrok)
-* Jakub Kulawiak (Jakub-Kulawiak1)
-* Bartosz Kobiernik (Bartosz56026)
+
+- Marcin Górecki (zew2)
+- Maciej Krok (mcjkrok)
+- Jakub Kulawiak (Jakub-Kulawiak1)
+- Bartosz Kobiernik (Bartosz56026)
