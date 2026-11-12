@@ -42,10 +42,7 @@ export default function WelcomeKiosk({ onQuickAction, onOpenLogin }) {
   return (
     <div className="relative min-h-screen bg-slate-50 overflow-hidden">
 
-      {/* Niebieskie tło */}
       <div className="absolute top-0 left-0 w-full h-[52vh] min-h-[350px] bg-gradient-to-br from-blue-400 via-blue-600 to-blue-800 rounded-b-[65px]" />
-
-      {/* Nagłówek */}
       <header className="relative z-10 flex items-center justify-between px-8 md:px-12 py-8 text-white">
 
         <div className="flex items-center gap-3">
@@ -67,18 +64,9 @@ export default function WelcomeKiosk({ onQuickAction, onOpenLogin }) {
             TimeTracker
           </span>
         </div>
-
-        <button
-          type="button"
-          onClick={onOpenLogin}
-          className="border border-white/30 bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-xl font-medium transition-colors"
-        >
-          ↪ Logowanie
-        </button>
       </header>
 
-      {/* Główna karta */}
-      <main className="relative z-10 flex justify-center px-4 pt-16 md:pt-20">
+      <main className="relative flex justify-center px-4 pt-16 md:pt-20">
 
         <div className="w-full max-w-[570px] bg-white rounded-2xl shadow-xl px-6 md:px-8 py-9">
 

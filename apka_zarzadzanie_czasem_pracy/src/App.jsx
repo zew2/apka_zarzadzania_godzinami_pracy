@@ -1,123 +1,170 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { 
-  MOCK_USER as EMPLOYEE_USER, 
-  MOCK_TIME_ENTRIES as EMPLOYEE_ENTRIES, 
-  MOCK_LEAVE_REQUESTS as EMPLOYEE_REQUESTS 
-} from './features/employee-panel/mockData';
-
-import { 
-  mockManager as MANAGER_USER, 
-  mockLeaveRequests as MANAGER_REQUESTS,
-  mockUsers as MANAGER_USERS,
-  mockTimeEntries as MANAGER_ENTRIES
-} from './features/manager-panel/mockData';
+import { collection, onSnapshot, addDoc, doc, setDoc, updateDoc } from "firebase/firestore";
+import { db, secondaryAuth } from "./firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 import LoginModal from './features/auth/LoginModal';
 import EmployeePanel from './features/employee-panel/EmployeePanel';
 import ManagerPanel from './features/manager-panel/ManagerPanel';
-
+import WelcomeKiosk from './features/time-tracking/WelcomeKiosk';
 
 export default function App() {
-  const { currentUser, logout } = useAuth();
-  const [showLoginModal, setShowLoginModal] = useState(false);
+    const { currentUser, logout } = useAuth();
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const [selectedRole, setSelectedRole] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [leaveRequests, setLeaveRequests] = useState([]);
+    const [timeEntries, setTimeEntries] = useState([]);
 
-  const handleLogout = () => {
-      setSelectedRole(null)
+    useEffect(() => {
+        const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+            setUsers(snapshot.docs.map(doc => doc.data()));
+        });
+        const unsubRequests = onSnapshot(collection(db, "leaveRequests"), (snapshot) => {
+            setLeaveRequests(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        });
+        const unsubEntries = onSnapshot(collection(db, "timeEntries"), (snapshot) => {
+            setTimeEntries(snapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id })));
+        });
 
-      logout();
-  }
+        return () => {
+            unsubUsers();
+            unsubRequests();
+            unsubEntries();
+        };
+    }, []);
 
-  if (!currentUser) {
+    const handleQuickAction = async (pin, actionType) => {
+        const user = users.find(u => String(u.pin) === String(pin));
+        
+        if (!user) {
+            alert("Nie znaleziono pracownika z takim PIN-em!");
+            return false;
+        }
+
+        try {
+            await addDoc(collection(db, "timeEntries"), {
+                userId: user.id,
+                type: actionType,
+                timestamp: new Date().toISOString()
+            });
+            return true;
+        } catch (error) {
+            console.error("Błąd zapisu czasu pracy:", error);
+            return false;
+        }
+    };
+
+    const handleSaveUser = async (userToSave) => {
+        try {
+            let userId = userToSave.id ? String(userToSave.id) : null;
+            if (!userId && userToSave.password) {
+                const userCredential = await createUserWithEmailAndPassword(
+                    secondaryAuth, 
+                    userToSave.email, 
+                    userToSave.password
+                );
+                userId = userCredential.user.uid;
+            } else if (!userId) {
+                userId = String(Date.now());
+            }
+
+            const userProfile = { ...userToSave, id: userId };
+            delete userProfile.password;
+
+            await setDoc(doc(db, "users", userId), userProfile, { merge: true });
+            alert("Sukces! Konto pracownika zostało zapisane.");
+        } catch (error) {
+            console.error("Błąd podczas tworzenia pracownika:", error);
+            alert("Błąd: " + error.message);
+        }
+    };
+
+    const handleSubmitLeave = async (newRequest) => {
+        try {
+            const completeRequest = {
+                ...newRequest,
+                userId: String(activeUser.id),
+                status: 'oczekuje',
+                createdAt: new Date().toISOString()
+            };
+            await addDoc(collection(db, "leaveRequests"), completeRequest);
+            alert("Wniosek został wysłany!");
+        } catch (error) {
+            console.error("Błąd wysyłania wniosku:", error);
+        }
+    };
+
+    const handleChangeLeaveStatus = async (requestId, status, managerNote) => {
+        try {
+            const requestRef = doc(db, "leaveRequests", String(requestId));
+            await updateDoc(requestRef, {
+                status: status,
+                managerNote: managerNote || ""
+            });
+        } catch (error) {
+            console.error("Błąd aktualizacji statusu wniosku:", error);
+        }
+    };
+
+    if (!currentUser) {
+        return (
+            <div className="relative min-h-screen bg-slate-100">
+                <div className="absolute top-4 right-4 z-50">
+                    <button 
+                        onClick={() => setShowLoginModal(true)}
+                        className="px-6 py-2 bg-indigo-600/90 hover:bg-indigo-700 text-white rounded-lg font-medium shadow backdrop-blur-sm transition"
+                    >
+                        Zaloguj do Panelu
+                    </button>
+                </div>
+
+                <WelcomeKiosk 
+                    onQuickAction={handleQuickAction}
+                    onOpenLogin={() => setShowLoginModal(true)}
+                />
+
+                {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
+            </div>
+        );
+    }
+
+    const dbUser = users.find(u => u.email === currentUser.email);
+
+    if (!dbUser) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <p className="text-lg font-medium text-slate-500 animate-pulse">
+                    Wczytywanie profilu...
+                </p>
+            </div>
+        );
+    }
+
+    const activeUser = { ...currentUser, ...dbUser };
+
+    if (activeUser.role === 'kierownik') {
+        return (
+            <ManagerPanel 
+                user={activeUser}
+                users={users} 
+                timeEntries={timeEntries} 
+                leaveRequests={leaveRequests}
+                onLogout={logout}
+                onChangeLeaveStatus={handleChangeLeaveStatus}
+                onSaveUser={handleSaveUser}
+            /> 
+        );
+    }
 
     return (
-      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center">
-        <button 
-          onClick={() => setShowLoginModal(true)}
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium shadow hover:bg-indigo-700"
-        >
-          Logowanie
-        </button>
-        {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
-      </div>
-    );
-
-  }
-
-  
-
-  if (currentUser && !selectedRole) {
-      return (
-          <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-              <div className="bg-white p-10 rounded-2xl shadow-xl text-center max-w-md w-full">
-                  <h2 className="text-2xl font-bold mb-2">Witaj, {currentUser.email}!</h2>
-                  <p className="text-gray-500 mb-8">Jako kto chcesz dzisiaj testować aplikację?</p>
-                  <div className="flex flex-col gap-4">
-                      <button
-                          onClick={() => setSelectedRole('pracownik')}
-                          className="p-4 border-2 border-emerald-500 text-emerald-600 font-bold rounded-xl hover:bg-emerald-50 transition"
-                       >
-                          Testuj jako Pracownik
-                       </button>
-                       <button
-                          onClick={() => setSelectedRole('kierownik')}
-                          className="p-4 border-2 border-blue-500 text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition"
-                       >
-                          Testuj jako kierownik
-                       </button>
-                  </div>
-                  
-                  <button onClick={handleLogout} className="mt-8 text-sm text-red-500 hover:underline">
-                      Wyloguj całkowicie
-                  </button>
-              </div>
-          </div>
-      )
-  }
-
-  const sourceMockUser = selectedRole === "pracownik" ? EMPLOYEE_USER : MANAGER_USER;
-
-  const activeUser = {
-    ...currentUser,
-    id: sourceMockUser.id, 
-    name: sourceMockUser.name,
-    role: selectedRole,
-    urlopDni: sourceMockUser.urlopDni || 26
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="p-4 bg-white shadow mb-4 flex justify-between items-center">
-        <span>Tryb: <strong>{activeUser.role}</strong></span>
-        <div className="flex gap-4">
-          <button onClick={() => setSelectedRole(null)}>Zmień widok</button>
-          <button onClick={handleLogout} className="text-red-500 font-bold">Wyloguj</button>
-        </div>
-      </div>
-
-      {selectedRole === 'pracownik' && (
         <EmployeePanel 
-          user={activeUser} 
-          timeEntries={EMPLOYEE_ENTRIES} 
-          leaveRequests={EMPLOYEE_REQUESTS} 
-          onLogout={handleLogout}
+            user={activeUser} 
+            timeEntries={timeEntries}
+            leaveRequests={leaveRequests} 
+            onLogout={logout}
+            onSubmitLeave={handleSubmitLeave}
         /> 
-      )}
-
-      {selectedRole === 'kierownik' && (
-        <ManagerPanel 
-          user={activeUser}
-          leaveRequests={MANAGER_REQUESTS}
-          users={MANAGER_USERS} 
-          timeEntries={MANAGER_ENTRIES}
-          onLogout={handleLogout}
-          onChangeLeaveStatus={(id, status, note) => console.log('Zmiana wniosku:', id, status, note)}
-          onSaveUser={(u) => console.log('Zapis użytkownika:', u)}
-        /> 
-      )}
-
-    </div>
-  );
+    );
 }

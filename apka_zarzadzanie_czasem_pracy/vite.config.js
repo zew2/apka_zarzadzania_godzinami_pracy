@@ -1,7 +1,19 @@
-import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  esbuild: {
+    
+    target: 'chrome80'
+  },
+  build: {
+    target: 'chrome80'
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'chrome80'
+    }
+  }
 })
